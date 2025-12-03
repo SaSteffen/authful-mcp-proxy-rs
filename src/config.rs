@@ -1,7 +1,7 @@
 //! Configuration parsing and validation
 
-use clap::Parser;
 use crate::error::{ProxyError, Result};
+use clap::Parser;
 
 const DEFAULT_SCOPES: &str = "openid profile email";
 const DEFAULT_REDIRECT_URL: &str = "http://localhost:8080/auth/callback";
@@ -76,24 +76,19 @@ impl Config {
         }
 
         if self.oidc_client_id.is_empty() {
-            return Err(ProxyError::Config(
-                "OIDC client ID is required".to_string(),
-            ));
+            return Err(ProxyError::Config("OIDC client ID is required".to_string()));
         }
 
         // Validate URLs
-        url::Url::parse(&self.backend_url).map_err(|e| {
-            ProxyError::Config(format!("Invalid backend URL: {}", e))
-        })?;
+        url::Url::parse(&self.backend_url)
+            .map_err(|e| ProxyError::Config(format!("Invalid backend URL: {}", e)))?;
 
-        url::Url::parse(&self.oidc_issuer_url).map_err(|e| {
-            ProxyError::Config(format!("Invalid OIDC issuer URL: {}", e))
-        })?;
+        url::Url::parse(&self.oidc_issuer_url)
+            .map_err(|e| ProxyError::Config(format!("Invalid OIDC issuer URL: {}", e)))?;
 
         if let Some(ref redirect_url) = self.oidc_redirect_url {
-            url::Url::parse(redirect_url).map_err(|e| {
-                ProxyError::Config(format!("Invalid redirect URL: {}", e))
-            })?;
+            url::Url::parse(redirect_url)
+                .map_err(|e| ProxyError::Config(format!("Invalid redirect URL: {}", e)))?;
         }
 
         Ok(())
@@ -101,15 +96,9 @@ impl Config {
 
     /// Get OAuth scopes as a list (with defaults)
     pub fn scopes(&self) -> Vec<String> {
-        let scopes_str = self
-            .oidc_scopes
-            .as_deref()
-            .unwrap_or(DEFAULT_SCOPES);
+        let scopes_str = self.oidc_scopes.as_deref().unwrap_or(DEFAULT_SCOPES);
 
-        let mut scopes: Vec<String> = scopes_str
-            .split_whitespace()
-            .map(String::from)
-            .collect();
+        let mut scopes: Vec<String> = scopes_str.split_whitespace().map(String::from).collect();
 
         // Ensure "openid" scope is always included
         if !scopes.iter().any(|s| s == "openid") {

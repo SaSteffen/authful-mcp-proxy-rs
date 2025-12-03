@@ -3,13 +3,13 @@
 //! Implements `reqwest-middleware::Middleware` to automatically inject bearer tokens
 //! and handle 401 responses by renewing tokens and retrying.
 
-use std::sync::Arc;
+use crate::oidc::OidcClient;
 use async_trait::async_trait;
 use http::Extensions;
 use reqwest::{Request, Response};
 use reqwest_middleware::{Middleware, Next, Result as MiddlewareResult};
+use std::sync::Arc;
 use tracing::{debug, warn};
-use crate::oidc::OidcClient;
 
 /// Middleware that injects OIDC bearer tokens and handles 401 responses
 pub struct AuthMiddleware {
@@ -32,35 +32,44 @@ impl Middleware for AuthMiddleware {
         next: Next<'_>,
     ) -> MiddlewareResult<Response> {
         // 1. Get access token and inject into Authorization header
-        let token = self.oidc_client.get_token().await
+        let token = self
+            .oidc_client
+            .get_token()
+            .await
             .map_err(|e| reqwest_middleware::Error::Middleware(e.into()))?;
 
         req.headers_mut().insert(
             reqwest::header::AUTHORIZATION,
-            format!("Bearer {}", token)
-                .parse()
-                .map_err(|e| reqwest_middleware::Error::Middleware(anyhow::anyhow!("Invalid token: {}", e)))?
+            format!("Bearer {}", token).parse().map_err(|e| {
+                reqwest_middleware::Error::Middleware(anyhow::anyhow!("Invalid token: {}", e))
+            })?,
         );
 
         debug!("Injected Authorization header with bearer token");
 
         // 2. Send the request
-        let response = next.clone().run(req.try_clone().unwrap(), extensions).await?;
+        let response = next
+            .clone()
+            .run(req.try_clone().unwrap(), extensions)
+            .await?;
 
         // 3. Handle 401 Unauthorized - renew token and retry once
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             warn!("Received 401 Unauthorized, renewing token and retrying");
 
             // Renew token (will refresh or perform full auth flow)
-            let new_token = self.oidc_client.renew_token().await
+            let new_token = self
+                .oidc_client
+                .renew_token()
+                .await
                 .map_err(|e| reqwest_middleware::Error::Middleware(e.into()))?;
 
             // Update Authorization header with new token
             req.headers_mut().insert(
                 reqwest::header::AUTHORIZATION,
-                format!("Bearer {}", new_token)
-                    .parse()
-                    .map_err(|e| reqwest_middleware::Error::Middleware(anyhow::anyhow!("Invalid token: {}", e)))?
+                format!("Bearer {}", new_token).parse().map_err(|e| {
+                    reqwest_middleware::Error::Middleware(anyhow::anyhow!("Invalid token: {}", e))
+                })?,
             );
 
             debug!("Retrying request with renewed token");
@@ -76,9 +85,9 @@ impl Middleware for AuthMiddleware {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::oidc::OidcClient;
     use mockito;
     use reqwest_middleware::ClientBuilder;
-    use crate::oidc::OidcClient;
 
     #[tokio::test]
     async fn test_middleware_injects_token() {

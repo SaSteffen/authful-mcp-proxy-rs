@@ -3,10 +3,10 @@
 //! Handles OAuth token storage, validation, and disk persistence.
 //! Compatible with Python version's token format for seamless migration.
 
+use crate::error::{ProxyError, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::error::{ProxyError, Result};
 
 const TOKEN_EXPIRY_BUFFER_SECS: u64 = 60;
 
@@ -163,7 +163,7 @@ impl TokenInfo {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_secs()
-                    + expires_in
+                    + expires_in,
             );
         }
 
@@ -214,7 +214,7 @@ mod tests {
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_secs()
-                    + 3600
+                    + 3600,
             ),
         };
 
@@ -226,7 +226,7 @@ mod tests {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_secs()
-                - 100
+                - 100,
         );
 
         assert!(!token.is_valid());

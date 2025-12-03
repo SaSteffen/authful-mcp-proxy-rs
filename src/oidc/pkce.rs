@@ -3,8 +3,8 @@
 //! Implements RFC 7636 for OAuth 2.0 authorization code flow security
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
-use rand::{Rng, distributions::Alphanumeric};
-use sha2::{Sha256, Digest};
+use rand::{distributions::Alphanumeric, Rng};
+use sha2::{Digest, Sha256};
 
 /// PKCE parameters for OAuth 2.0 authorization code flow
 #[derive(Debug, Clone)]

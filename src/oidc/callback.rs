@@ -3,6 +3,7 @@
 //! Temporary HTTP server that handles the OAuth authorization callback.
 //! Runs on localhost and receives the authorization code from the OIDC provider.
 
+use crate::error::{ProxyError, Result};
 use axum::{
     extract::Query,
     response::{Html, IntoResponse},
@@ -12,7 +13,6 @@ use axum::{
 use serde::Deserialize;
 use std::net::SocketAddr;
 use tokio::sync::oneshot;
-use crate::error::{ProxyError, Result};
 
 const CALLBACK_TIMEOUT_SECS: u64 = 300;
 
@@ -38,26 +38,28 @@ pub async fn run_callback_server(port: u16, path: &str) -> Result<CallbackResult
 
     // Create the callback handler
     let callback_path = path.to_string();
-    let app = Router::new().route(
-        &callback_path,
-        get({
-            let tx = tx.clone();
-            move |Query(params): Query<CallbackQuery>| async move {
-                handle_callback(params, tx).await
-            }
-        }),
-    );
+    let app =
+        Router::new().route(
+            &callback_path,
+            get({
+                let tx = tx.clone();
+                move |Query(params): Query<CallbackQuery>| async move {
+                    handle_callback(params, tx).await
+                }
+            }),
+        );
 
     // Bind to localhost on the specified port
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
-    tracing::info!("OAuth callback server listening on http://{}{}", addr, callback_path);
+    tracing::info!(
+        "OAuth callback server listening on http://{}{}",
+        addr,
+        callback_path
+    );
 
     // Start server with graceful shutdown
-    let server = axum::serve(
-        tokio::net::TcpListener::bind(addr).await?,
-        app
-    );
+    let server = axum::serve(tokio::net::TcpListener::bind(addr).await?, app);
 
     // Run server in background and wait for callback with timeout
     tokio::select! {

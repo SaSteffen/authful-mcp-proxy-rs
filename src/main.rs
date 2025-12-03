@@ -11,8 +11,8 @@ mod proxy;
 
 use config::Config;
 use error::Result;
-use tracing::{info, error};
-use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+use tracing::{error, info};
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 const BANNER: &str = r#"
 ╔══════════════════════════════════════════════════════════════╗
@@ -23,9 +23,7 @@ const BANNER: &str = r#"
 
 fn setup_logging(config: &Config) {
     let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| {
-            EnvFilter::new(format!("{}", config.log_level()))
-        });
+        .unwrap_or_else(|_| EnvFilter::new(format!("{}", config.log_level())));
 
     // Ensure logs go to stderr, not stdout (stdout is for JSON-RPC only)
     tracing_subscriber::registry()
@@ -83,9 +81,7 @@ async fn run_proxy(config: Config) -> Result<()> {
     // Start MCP proxy server
     let proxy_handle = tokio::spawn({
         let config = config.clone();
-        async move {
-            proxy::run_proxy_server(config, oidc_client).await
-        }
+        async move { proxy::run_proxy_server(config, oidc_client).await }
     });
 
     // Wait for shutdown signal

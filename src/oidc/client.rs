@@ -3,11 +3,11 @@
 //! Main OIDC client that orchestrates the OAuth 2.0 authorization code flow with PKCE.
 //! Manages token lifecycle (cache, refresh, re-authentication).
 
+use super::{callback, OidcConfig, PkceParams, TokenInfo, TokenResponse};
+use crate::error::{ProxyError, Result};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use url::Url;
-use crate::error::{ProxyError, Result};
-use super::{OidcConfig, PkceParams, TokenInfo, TokenResponse, callback};
 
 /// OIDC client for managing OAuth 2.0 authentication
 pub struct OidcClient {
@@ -67,7 +67,10 @@ impl OidcClient {
         // Check if we can refresh
         let can_refresh = {
             let token_guard = self.token_info.read().await;
-            token_guard.as_ref().map(|t| t.can_refresh()).unwrap_or(false)
+            token_guard
+                .as_ref()
+                .map(|t| t.can_refresh())
+                .unwrap_or(false)
         };
 
         if can_refresh {
@@ -118,7 +121,9 @@ impl OidcClient {
         }
 
         // Exchange authorization code for tokens
-        let tokens = self.exchange_code_for_tokens(&callback_result.code, &pkce).await?;
+        let tokens = self
+            .exchange_code_for_tokens(&callback_result.code, &pkce)
+            .await?;
 
         // Save and cache tokens
         tokens.save_to_disk(&self.issuer_url)?;
@@ -244,8 +249,8 @@ impl OidcClient {
 
 /// Generate a random state parameter for CSRF protection
 fn generate_state() -> String {
-    use rand::Rng;
     use rand::distributions::Alphanumeric;
+    use rand::Rng;
 
     rand::thread_rng()
         .sample_iter(&Alphanumeric)

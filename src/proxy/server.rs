@@ -3,15 +3,15 @@
 //! Bridges stdio transport (for MCP clients like Claude Desktop) to HTTP transport
 //! (for remote MCP servers with OIDC authentication).
 
-use std::sync::Arc;
-use std::time::SystemTime;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::fs::OpenOptions;
-use reqwest_middleware::ClientBuilder;
 use crate::config::Config;
 use crate::error::{ProxyError, Result};
 use crate::middleware::AuthMiddleware;
 use crate::oidc::OidcClient;
+use reqwest_middleware::ClientBuilder;
+use std::sync::Arc;
+use std::time::SystemTime;
+use tokio::fs::OpenOptions;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 /// Message logger for debugging
 struct MessageLogger {
@@ -26,7 +26,9 @@ impl MessageLogger {
                 .append(true)
                 .open(&path)
                 .await
-                .map_err(|e| ProxyError::Mcp(format!("Failed to open message log file '{}': {}", path, e)))?;
+                .map_err(|e| {
+                    ProxyError::Mcp(format!("Failed to open message log file '{}': {}", path, e))
+                })?;
 
             tracing::info!("Message dumping enabled: {}", path);
             Some(file)
@@ -41,9 +43,11 @@ impl MessageLogger {
         if let Some(ref mut file) = self.file {
             let timestamp = Self::get_timestamp();
             let log_line = format!("[{}] CLIENT → PROXY: {}\n", timestamp, message);
-            file.write_all(log_line.as_bytes()).await
+            file.write_all(log_line.as_bytes())
+                .await
                 .map_err(|e| ProxyError::Mcp(format!("Failed to write to message log: {}", e)))?;
-            file.flush().await
+            file.flush()
+                .await
                 .map_err(|e| ProxyError::Mcp(format!("Failed to flush message log: {}", e)))?;
         }
         Ok(())
@@ -53,9 +57,11 @@ impl MessageLogger {
         if let Some(ref mut file) = self.file {
             let timestamp = Self::get_timestamp();
             let log_line = format!("[{}] BACKEND → PROXY: {}\n", timestamp, message);
-            file.write_all(log_line.as_bytes()).await
+            file.write_all(log_line.as_bytes())
+                .await
                 .map_err(|e| ProxyError::Mcp(format!("Failed to write to message log: {}", e)))?;
-            file.flush().await
+            file.flush()
+                .await
                 .map_err(|e| ProxyError::Mcp(format!("Failed to flush message log: {}", e)))?;
         }
         Ok(())
@@ -65,9 +71,11 @@ impl MessageLogger {
         if let Some(ref mut file) = self.file {
             let timestamp = Self::get_timestamp();
             let log_line = format!("[{}] PROXY → CLIENT: {}\n", timestamp, message);
-            file.write_all(log_line.as_bytes()).await
+            file.write_all(log_line.as_bytes())
+                .await
                 .map_err(|e| ProxyError::Mcp(format!("Failed to write to message log: {}", e)))?;
-            file.flush().await
+            file.flush()
+                .await
                 .map_err(|e| ProxyError::Mcp(format!("Failed to flush message log: {}", e)))?;
         }
         Ok(())
@@ -115,7 +123,10 @@ pub async fn run_proxy_server(config: Config, oidc_client: OidcClient) -> Result
     let mut reader = BufReader::new(stdin);
 
     tracing::info!("MCP proxy server running on stdio transport");
-    tracing::info!("Ready to forward messages between stdio and {}", config.backend_url);
+    tracing::info!(
+        "Ready to forward messages between stdio and {}",
+        config.backend_url
+    );
 
     // Message forwarding loop
     let mut line = String::new();
@@ -123,7 +134,9 @@ pub async fn run_proxy_server(config: Config, oidc_client: OidcClient) -> Result
         line.clear();
 
         // Read JSON-RPC message from stdin
-        let bytes_read = reader.read_line(&mut line).await
+        let bytes_read = reader
+            .read_line(&mut line)
+            .await
             .map_err(|e| ProxyError::Mcp(format!("Failed to read from stdin: {}", e)))?;
 
         // EOF or client disconnect
@@ -170,12 +183,18 @@ pub async fn run_proxy_server(config: Config, oidc_client: OidcClient) -> Result
                         message_logger.log_backend_response(&response_body).await?;
 
                         // Write response back to stdout (with newline for JSON-RPC)
-                        stdout.write_all(response_body.as_bytes()).await
-                            .map_err(|e| ProxyError::Mcp(format!("Failed to write to stdout: {}", e)))?;
-                        stdout.write_all(b"\n").await
-                            .map_err(|e| ProxyError::Mcp(format!("Failed to write newline to stdout: {}", e)))?;
-                        stdout.flush().await
-                            .map_err(|e| ProxyError::Mcp(format!("Failed to flush stdout: {}", e)))?;
+                        stdout
+                            .write_all(response_body.as_bytes())
+                            .await
+                            .map_err(|e| {
+                                ProxyError::Mcp(format!("Failed to write to stdout: {}", e))
+                            })?;
+                        stdout.write_all(b"\n").await.map_err(|e| {
+                            ProxyError::Mcp(format!("Failed to write newline to stdout: {}", e))
+                        })?;
+                        stdout.flush().await.map_err(|e| {
+                            ProxyError::Mcp(format!("Failed to flush stdout: {}", e))
+                        })?;
 
                         // Log what we sent to client
                         message_logger.log_client_response(&response_body).await?;
@@ -193,12 +212,15 @@ pub async fn run_proxy_server(config: Config, oidc_client: OidcClient) -> Result
                         });
                         let error_str = error_response.to_string();
 
-                        stdout.write_all(error_str.as_bytes()).await
-                            .map_err(|e| ProxyError::Mcp(format!("Failed to write error to stdout: {}", e)))?;
-                        stdout.write_all(b"\n").await
-                            .map_err(|e| ProxyError::Mcp(format!("Failed to write newline to stdout: {}", e)))?;
-                        stdout.flush().await
-                            .map_err(|e| ProxyError::Mcp(format!("Failed to flush stdout: {}", e)))?;
+                        stdout.write_all(error_str.as_bytes()).await.map_err(|e| {
+                            ProxyError::Mcp(format!("Failed to write error to stdout: {}", e))
+                        })?;
+                        stdout.write_all(b"\n").await.map_err(|e| {
+                            ProxyError::Mcp(format!("Failed to write newline to stdout: {}", e))
+                        })?;
+                        stdout.flush().await.map_err(|e| {
+                            ProxyError::Mcp(format!("Failed to flush stdout: {}", e))
+                        })?;
 
                         // Log error response
                         message_logger.log_client_response(&error_str).await?;
@@ -218,11 +240,15 @@ pub async fn run_proxy_server(config: Config, oidc_client: OidcClient) -> Result
                 });
                 let error_str = error_response.to_string();
 
-                stdout.write_all(error_str.as_bytes()).await
-                    .map_err(|e| ProxyError::Mcp(format!("Failed to write error to stdout: {}", e)))?;
-                stdout.write_all(b"\n").await
-                    .map_err(|e| ProxyError::Mcp(format!("Failed to write newline to stdout: {}", e)))?;
-                stdout.flush().await
+                stdout.write_all(error_str.as_bytes()).await.map_err(|e| {
+                    ProxyError::Mcp(format!("Failed to write error to stdout: {}", e))
+                })?;
+                stdout.write_all(b"\n").await.map_err(|e| {
+                    ProxyError::Mcp(format!("Failed to write newline to stdout: {}", e))
+                })?;
+                stdout
+                    .flush()
+                    .await
                     .map_err(|e| ProxyError::Mcp(format!("Failed to flush stdout: {}", e)))?;
 
                 // Log error response

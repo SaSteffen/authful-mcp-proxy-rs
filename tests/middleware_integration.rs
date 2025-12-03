@@ -52,7 +52,10 @@ async fn test_middleware_injects_bearer_token() {
     // Mock API endpoint that requires authentication
     let _api_mock = api_server
         .mock("GET", "/api/test")
-        .match_header("authorization", mockito::Matcher::Regex(r"Bearer .+".to_string()))
+        .match_header(
+            "authorization",
+            mockito::Matcher::Regex(r"Bearer .+".to_string()),
+        )
         .with_status(200)
         .with_body("Success")
         .expect(1)
@@ -125,7 +128,10 @@ async fn test_middleware_preserves_other_headers() {
     let _api_mock = api_server
         .mock("GET", "/api/test")
         .match_header("x-custom-header", "test-value")
-        .match_header("authorization", mockito::Matcher::Regex(r"Bearer .+".to_string()))
+        .match_header(
+            "authorization",
+            mockito::Matcher::Regex(r"Bearer .+".to_string()),
+        )
         .with_status(200)
         .with_body("Success")
         .expect(1)

@@ -2,8 +2,8 @@
 //!
 //! Fetches OIDC configuration from /.well-known/openid-configuration
 
-use serde::{Deserialize, Serialize};
 use crate::error::{ProxyError, Result};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OidcConfig {
@@ -19,7 +19,10 @@ pub struct OidcConfig {
 impl OidcConfig {
     /// Discover OIDC configuration from issuer URL
     pub async fn discover(issuer_url: &str) -> Result<Self> {
-        let discovery_url = format!("{}/.well-known/openid-configuration", issuer_url.trim_end_matches('/'));
+        let discovery_url = format!(
+            "{}/.well-known/openid-configuration",
+            issuer_url.trim_end_matches('/')
+        );
 
         let client = reqwest::Client::new();
         let response = client
@@ -27,7 +30,9 @@ impl OidcConfig {
             .timeout(std::time::Duration::from_secs(5))
             .send()
             .await
-            .map_err(|e| ProxyError::Discovery(format!("Failed to fetch OIDC configuration: {}", e)))?;
+            .map_err(|e| {
+                ProxyError::Discovery(format!("Failed to fetch OIDC configuration: {}", e))
+            })?;
 
         if !response.status().is_success() {
             return Err(ProxyError::Discovery(format!(
@@ -36,10 +41,9 @@ impl OidcConfig {
             )));
         }
 
-        let config: OidcConfig = response
-            .json()
-            .await
-            .map_err(|e| ProxyError::Discovery(format!("Failed to parse OIDC configuration: {}", e)))?;
+        let config: OidcConfig = response.json().await.map_err(|e| {
+            ProxyError::Discovery(format!("Failed to parse OIDC configuration: {}", e))
+        })?;
 
         // Validate required endpoints
         if config.authorization_endpoint.is_empty() {

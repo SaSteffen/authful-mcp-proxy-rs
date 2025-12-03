@@ -4,9 +4,9 @@
 
 use mockito::ServerGuard;
 use serde_json::json;
+use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
-use std::time::Duration;
 
 /// Helper to set up a mock OIDC provider
 async fn setup_mock_oidc(server: &mut ServerGuard) {
@@ -34,12 +34,15 @@ async fn setup_mock_oidc(server: &mut ServerGuard) {
         .mock("POST", "/token")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(json!({
-            "access_token": "test_access_token_123",
-            "token_type": "Bearer",
-            "expires_in": 3600,
-            "refresh_token": "test_refresh_token_456"
-        }).to_string())
+        .with_body(
+            json!({
+                "access_token": "test_access_token_123",
+                "token_type": "Bearer",
+                "expires_in": 3600,
+                "refresh_token": "test_refresh_token_456"
+            })
+            .to_string(),
+        )
         .create();
 }
 
@@ -54,17 +57,23 @@ async fn test_proxy_forwards_json_rpc_messages() {
     // Mock MCP backend server that echoes requests
     let _backend_mock = backend_server
         .mock("POST", "/")
-        .match_header("authorization", mockito::Matcher::Regex(r"Bearer .+".to_string()))
+        .match_header(
+            "authorization",
+            mockito::Matcher::Regex(r"Bearer .+".to_string()),
+        )
         .match_header("content-type", "application/json")
         .with_status(200)
-        .with_body(json!({
-            "jsonrpc": "2.0",
-            "result": {
-                "status": "ok",
-                "message": "Request processed"
-            },
-            "id": 1
-        }).to_string())
+        .with_body(
+            json!({
+                "jsonrpc": "2.0",
+                "result": {
+                    "status": "ok",
+                    "message": "Request processed"
+                },
+                "id": 1
+            })
+            .to_string(),
+        )
         .expect(1)
         .create();
 
