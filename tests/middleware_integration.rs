@@ -2,11 +2,8 @@
 //!
 //! Tests token injection and 401 retry logic with mocked backends
 
-use authful_mcp_proxy_ng::middleware::AuthMiddleware;
 use authful_mcp_proxy_ng::oidc::OidcClient;
-use mockito::{Mock, ServerGuard};
-use reqwest_middleware::ClientBuilder;
-use std::sync::Arc;
+use mockito::ServerGuard;
 
 /// Helper to create a mock OIDC provider
 async fn setup_mock_oidc_provider(server: &mut ServerGuard) -> OidcClient {

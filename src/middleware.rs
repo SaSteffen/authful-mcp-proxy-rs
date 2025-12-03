@@ -84,11 +84,6 @@ impl Middleware for AuthMiddleware {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::oidc::OidcClient;
-    use mockito;
-    use reqwest_middleware::ClientBuilder;
-
     #[tokio::test]
     async fn test_middleware_injects_token() {
         // This is a placeholder test - will be implemented with proper mocking

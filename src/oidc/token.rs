@@ -116,8 +116,7 @@ impl TokenInfo {
         issuer_url
             .trim_start_matches("https://")
             .trim_start_matches("http://")
-            .replace('/', "_")
-            .replace(':', "_")
+            .replace(['/', ':'], "_")
     }
 
     /// Get token file path for a given issuer
@@ -169,18 +168,6 @@ impl TokenInfo {
 
         tracing::debug!("Tokens loaded from {:?}", file_path);
         Ok(Some(token_info))
-    }
-
-    /// Delete tokens from disk
-    pub fn delete_from_disk(issuer_url: &str) -> Result<()> {
-        let file_path = Self::get_token_file_path(issuer_url)?;
-
-        if file_path.exists() {
-            std::fs::remove_file(&file_path)?;
-            tracing::debug!("Tokens deleted from {:?}", file_path);
-        }
-
-        Ok(())
     }
 }
 

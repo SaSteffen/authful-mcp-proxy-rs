@@ -7,9 +7,6 @@ pub enum ProxyError {
     #[error("Configuration error: {0}")]
     Config(String),
 
-    #[error("OIDC error: {0}")]
-    Oidc(String),
-
     #[error("OIDC discovery failed: {0}")]
     Discovery(String),
 
@@ -18,9 +15,6 @@ pub enum ProxyError {
 
     #[error("OAuth callback error: {0}")]
     Callback(String),
-
-    #[error("Browser launch failed: {0}")]
-    Browser(String),
 
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),

@@ -4,9 +4,6 @@
 
 use mockito::ServerGuard;
 use serde_json::json;
-use std::time::Duration;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::process::{Child, Command};
 
 /// Helper to set up a mock OIDC provider
 async fn setup_mock_oidc(server: &mut ServerGuard) {
