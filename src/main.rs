@@ -5,6 +5,7 @@
 
 mod config;
 mod error;
+mod middleware;
 mod oidc;
 mod proxy;
 

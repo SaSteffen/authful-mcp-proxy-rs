@@ -134,6 +134,7 @@ dependencies = [
  "axum",
  "base64",
  "clap",
+ "http",
  "mockito",
  "rand 0.8.5",
  "reqwest",
