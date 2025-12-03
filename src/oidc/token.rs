@@ -166,6 +166,13 @@ impl TokenInfo {
             );
         }
 
+        // Clean up expired tokens that can't be refreshed
+        if !token_info.is_valid() && !token_info.can_refresh() {
+            tracing::info!("Removing expired token file that cannot be refreshed");
+            std::fs::remove_file(&file_path)?;
+            return Ok(None);
+        }
+
         tracing::debug!("Tokens loaded from {:?}", file_path);
         Ok(Some(token_info))
     }
