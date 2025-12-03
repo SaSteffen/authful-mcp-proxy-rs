@@ -1,0 +1,184 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Authful MCP Proxy (Rust) ${{ steps.get_version.outputs.version }}
+
+            ### Downloads
+
+            Choose the binary for your platform:
+
+            - **Linux x64**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-linux-x64.tar.gz`
+            - **Linux ARM64**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-linux-arm64.tar.gz`
+            - **macOS Intel**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-macos-intel.tar.gz`
+            - **macOS Apple Silicon**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-macos-arm.tar.gz`
+            - **Windows x64**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-windows-x64.zip`
+
+            ### Installation
+
+            See [README.md](https://github.com/${{ github.repository }}/blob/main/README.md) for installation instructions.
+
+            ### Checksums
+
+            SHA256 checksums are available in `checksums.txt`.
+
+  build-release:
+    name: Build ${{ matrix.name }}
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            name: linux-x64
+            cross: false
+
+          # Linux ARM64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            name: linux-arm64
+            cross: true
+
+          # macOS Intel
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            name: macos-intel
+            cross: false
+
+          # macOS Apple Silicon
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: macos-arm
+            cross: false
+
+          # Windows x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: windows-x64
+            cross: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Install cross
+        if: matrix.cross
+        run: cargo install cross
+
+      - name: Build release (cross)
+        if: matrix.cross
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Build release (native)
+        if: ${{ !matrix.cross }}
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Create archive (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf ../../../authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz authful-mcp-proxy-ng
+          cd -
+
+      - name: Create archive (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd target\${{ matrix.target }}\release
+          7z a ..\..\..\authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.zip authful-mcp-proxy-ng.exe
+          cd ..\..\..
+
+      - name: Generate checksums (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          sha256sum authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz > authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz.sha256
+
+      - name: Generate checksums (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          certutil -hashfile authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.zip SHA256 > authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.zip.sha256
+
+      - name: Upload Release Asset (Unix)
+        if: runner.os != 'Windows'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz
+          asset_name: authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Release Asset (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: .\authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.zip
+          asset_name: authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.zip
+          asset_content_type: application/zip
+
+      - name: Upload Checksum (Unix)
+        if: runner.os != 'Windows'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz.sha256
+          asset_name: authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz.sha256
+          asset_content_type: text/plain
+
+      - name: Upload Checksum (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: .\authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.zip.sha256
+          asset_name: authful-mcp-proxy-ng-v${{ needs.create-release.outputs.version }}-${{ matrix.name }}.zip.sha256
+          asset_content_type: text/plain
