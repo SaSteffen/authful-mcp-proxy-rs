@@ -27,9 +27,10 @@ fn setup_logging(config: &Config) {
             EnvFilter::new(format!("{}", config.log_level()))
         });
 
+    // Ensure logs go to stderr, not stdout (stdout is for JSON-RPC only)
     tracing_subscriber::registry()
         .with(filter)
-        .with(fmt::layer())
+        .with(fmt::layer().with_writer(std::io::stderr))
         .init();
 }
 
@@ -46,15 +47,15 @@ async fn main() {
         std::process::exit(1);
     }
 
-    // Show banner unless suppressed
+    // Show banner unless suppressed (write to stderr, not stdout!)
     if !config.no_banner && !config.silent {
-        println!("{}", BANNER);
+        eprintln!("{}", BANNER);
         info!("Backend URL: {}", config.backend_url);
         info!("OIDC Issuer: {}", config.oidc_issuer_url);
         info!("Client ID: {}", config.oidc_client_id);
         info!("Scopes: {}", config.scopes().join(" "));
         info!("Redirect URL: {}", config.redirect_url());
-        println!();
+        eprintln!();
     }
 
     // Run the proxy

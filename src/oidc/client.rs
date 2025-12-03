@@ -98,8 +98,8 @@ impl OidcClient {
         tracing::info!("Opening browser for authorization: {}", auth_url);
         if let Err(e) = webbrowser::open(&auth_url) {
             tracing::warn!("Failed to open browser: {}", e);
-            println!("\n⚠️  Could not open browser automatically.");
-            println!("Please open this URL in your browser:\n\n{}\n", auth_url);
+            eprintln!("\n⚠️  Could not open browser automatically.");
+            eprintln!("Please open this URL in your browser:\n\n{}\n", auth_url);
         }
 
         // Extract port and path from redirect URL

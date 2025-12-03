@@ -49,6 +49,10 @@ pub struct Config {
     /// Enable debug logging
     #[arg(long, env = "MCP_PROXY_DEBUG")]
     pub debug: bool,
+
+    /// Dump all messages to a log file for debugging (format: YYYY-MM-DD_HH-MM-SS_messages.log)
+    #[arg(long, env = "MCP_PROXY_DUMP_MESSAGES")]
+    pub dump_messages: Option<String>,
 }
 
 impl Config {
@@ -150,6 +154,7 @@ mod tests {
             no_banner: false,
             silent: false,
             debug: false,
+            dump_messages: None,
         };
 
         let scopes = config.scopes();
@@ -170,6 +175,7 @@ mod tests {
             no_banner: false,
             silent: false,
             debug: false,
+            dump_messages: None,
         };
 
         let scopes = config.scopes();
@@ -190,6 +196,7 @@ mod tests {
             no_banner: false,
             silent: false,
             debug: false,
+            dump_messages: None,
         };
 
         assert_eq!(config.redirect_url(), DEFAULT_REDIRECT_URL);
