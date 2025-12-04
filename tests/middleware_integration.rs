@@ -2,7 +2,7 @@
 //!
 //! Tests token injection and 401 retry logic with mocked backends
 
-use authful_mcp_proxy_ng::oidc::OidcClient;
+use authful_mcp_proxy_rs::oidc::OidcClient;
 use mockito::ServerGuard;
 
 /// Helper to create a mock OIDC provider

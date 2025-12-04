@@ -81,14 +81,14 @@ jobs:
       - name: Test release binary (Unix)
         if: runner.os != 'Windows'
         run: |
-          ./target/${{ matrix.target }}/release/authful-mcp-proxy-ng --help
-          ./target/${{ matrix.target }}/release/authful-mcp-proxy-ng --version
+          ./target/${{ matrix.target }}/release/authful-mcp-proxy-rs --help
+          ./target/${{ matrix.target }}/release/authful-mcp-proxy-rs --version
 
       - name: Test release binary (Windows)
         if: runner.os == 'Windows'
         run: |
-          .\target\${{ matrix.target }}\release\authful-mcp-proxy-ng.exe --help
-          .\target\${{ matrix.target }}\release\authful-mcp-proxy-ng.exe --version
+          .\target\${{ matrix.target }}\release\authful-mcp-proxy-rs.exe --help
+          .\target\${{ matrix.target }}\release\authful-mcp-proxy-rs.exe --version
 
   coverage:
     name: Code Coverage

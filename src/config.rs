@@ -8,7 +8,7 @@ const DEFAULT_REDIRECT_URL: &str = "http://localhost:8080/auth/callback";
 
 #[derive(Parser, Debug, Clone)]
 #[command(
-    name = "authful-mcp-proxy-ng",
+    name = "authful-mcp-proxy-rs",
     version,
     about = "Authful Remote-HTTP-to-Local-stdio MCP Proxy",
     long_about = "MCP proxy that bridges remote HTTP MCP servers with OIDC authentication to local stdio transport for MCP clients like Claude Desktop"

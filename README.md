@@ -2,7 +2,7 @@
 
 A high-performance [Model Context Protocol](https://modelcontextprotocol.com) (MCP) proxy server written in Rust that performs OIDC authentication to obtain access tokens for remote MCP servers protected by token validation, and bridges HTTP transport to local stdio for MCP clients like Claude Desktop.
 
-**Rust rewrite** of the original [Python authful-mcp-proxy](https://github.com/yourusername/authful-mcp-proxy) with:
+**Rust rewrite** of the original [Python authful-mcp-proxy](https://github.com/stephaneberle9/authful-mcp-proxy) with:
 - 🚀 **Fast startup**: <1 second (vs 2-3 seconds for Python)
 - 📦 **Single binary**: 3.3 MB standalone executable (no runtime dependencies)
 - 💾 **Low memory**: ~10-20 MB footprint (vs 50-80 MB for Python)
@@ -11,24 +11,44 @@ A high-performance [Model Context Protocol](https://modelcontextprotocol.com) (M
 
 ## Table of Contents
 
-- [What Is This For?](#what-is-this-for)
-  - [Technical Background](#technical-background)
-- [Installation](#installation)
-  - [Download Prebuilt Binary](#download-prebuilt-binary)
-  - [Build from Source](#build-from-source)
-- [Usage](#usage)
-  - [Quick Start](#quick-start)
-  - [Configuration Options](#configuration-options)
-  - [Usage Examples](#usage-examples)
-  - [Using with Other MCP Clients](#using-with-other-mcp-clients)
-- [Credential Management](#credential-management)
-- [Troubleshooting](#troubleshooting)
-- [Migration from Python Version](#migration-from-python-version)
-- [Contributing](#contributing)
+- [Authful MCP Proxy (Rust)](#authful-mcp-proxy-rust)
+  - [Table of Contents](#table-of-contents)
+  - [What Is This For?](#what-is-this-for)
+    - [Technical Background](#technical-background)
+  - [Installation](#installation)
+    - [Download Prebuilt Binary](#download-prebuilt-binary)
+    - [Build from Source](#build-from-source)
+  - [Usage](#usage)
+    - [Quick Start](#quick-start)
+    - [Configuration Options](#configuration-options)
+    - [Usage Examples](#usage-examples)
+      - [Example 1: Claude Desktop (Recommended)](#example-1-claude-desktop-recommended)
+      - [Example 2: With Client Secret (Confidential Client)](#example-2-with-client-secret-confidential-client)
+      - [Example 3: Custom Redirect Port](#example-3-custom-redirect-port)
+      - [Example 4: Debug Mode](#example-4-debug-mode)
+    - [Using with Other MCP Clients](#using-with-other-mcp-clients)
+      - [MCP Inspector](#mcp-inspector)
+      - [Cursor / Windsurf](#cursor--windsurf)
+      - [Command Line / Direct Usage](#command-line--direct-usage)
+  - [Credential Management](#credential-management)
+    - [Where Are Credentials Stored?](#where-are-credentials-stored)
+    - [Clear Cached Credentials](#clear-cached-credentials)
+  - [Troubleshooting](#troubleshooting)
+    - [Browser Doesn't Open for Authentication](#browser-doesnt-open-for-authentication)
+    - [401 Unauthorized Errors](#401-unauthorized-errors)
+    - [Redirect URI Mismatch](#redirect-uri-mismatch)
+    - [Token Refresh Failures](#token-refresh-failures)
+    - [Connection to Backend Fails](#connection-to-backend-fails)
+    - [MCP Client Doesn't Recognize the Proxy](#mcp-client-doesnt-recognize-the-proxy)
+    - [Debug Logging](#debug-logging)
+    - [Still Having Issues?](#still-having-issues)
+  - [Migration from Python Version](#migration-from-python-version)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## What Is This For?
 
-Use `authful-mcp-proxy-ng` when you need to connect your MCP client (like Claude Desktop, Cursor, or Windsurf) to a remote MCP server that:
+Use `authful-mcp-proxy-rs` when you need to connect your MCP client (like Claude Desktop, Cursor, or Windsurf) to a remote MCP server that:
 - Is protected by OAuth/OIDC token validation
 - Doesn't handle authentication itself (no built-in OAuth flows)
 - Returns `401 Unauthorized` without proper access tokens
@@ -50,32 +70,32 @@ Download the latest release for your platform:
 **Linux (x86_64)**:
 ```bash
 # Download and install to /usr/local/bin
-curl -L https://github.com/yourusername/authful-mcp-proxy-ng/releases/latest/download/authful-mcp-proxy-ng-linux-x64.tar.gz | tar xz
-sudo mv authful-mcp-proxy-ng /usr/local/bin/
-chmod +x /usr/local/bin/authful-mcp-proxy-ng
+curl -L https://github.com/yourusername/authful-mcp-proxy-rs/releases/latest/download/authful-mcp-proxy-rs-linux-x64.tar.gz | tar xz
+sudo mv authful-mcp-proxy-rs /usr/local/bin/
+chmod +x /usr/local/bin/authful-mcp-proxy-rs
 ```
 
 **macOS (Intel)**:
 ```bash
 # Download and install
-curl -L https://github.com/yourusername/authful-mcp-proxy-ng/releases/latest/download/authful-mcp-proxy-ng-macos-intel.tar.gz | tar xz
-sudo mv authful-mcp-proxy-ng /usr/local/bin/
-chmod +x /usr/local/bin/authful-mcp-proxy-ng
+curl -L https://github.com/yourusername/authful-mcp-proxy-rs/releases/latest/download/authful-mcp-proxy-rs-macos-intel.tar.gz | tar xz
+sudo mv authful-mcp-proxy-rs /usr/local/bin/
+chmod +x /usr/local/bin/authful-mcp-proxy-rs
 ```
 
 **macOS (Apple Silicon - M1/M2/M3/M4)**:
 ```bash
 # Download and install
-curl -L https://github.com/yourusername/authful-mcp-proxy-ng/releases/latest/download/authful-mcp-proxy-ng-macos-arm.tar.gz | tar xz
-sudo mv authful-mcp-proxy-ng /usr/local/bin/
-chmod +x /usr/local/bin/authful-mcp-proxy-ng
+curl -L https://github.com/yourusername/authful-mcp-proxy-rs/releases/latest/download/authful-mcp-proxy-rs-macos-arm.tar.gz | tar xz
+sudo mv authful-mcp-proxy-rs /usr/local/bin/
+chmod +x /usr/local/bin/authful-mcp-proxy-rs
 ```
 
 **Windows (x64)**:
 ```powershell
 # Download and extract to Program Files
-Invoke-WebRequest -Uri "https://github.com/yourusername/authful-mcp-proxy-ng/releases/latest/download/authful-mcp-proxy-ng-windows-x64.zip" -OutFile "mcp-proxy.zip"
-Expand-Archive mcp-proxy.zip -DestinationPath "$env:ProgramFiles\authful-mcp-proxy-ng"
+Invoke-WebRequest -Uri "https://github.com/yourusername/authful-mcp-proxy-rs/releases/latest/download/authful-mcp-proxy-rs-windows-x64.zip" -OutFile "mcp-proxy.zip"
+Expand-Archive mcp-proxy.zip -DestinationPath "$env:ProgramFiles\authful-mcp-proxy-rs"
 
 # Add to PATH (optional - or use full path in Claude Desktop config)
 ```
@@ -86,17 +106,17 @@ Requires [Rust](https://rustup.rs/) 1.70 or later:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/authful-mcp-proxy-ng.git
-cd authful-mcp-proxy-ng
+git clone https://github.com/yourusername/authful-mcp-proxy-rs.git
+cd authful-mcp-proxy-rs
 
 # Build release binary
 cargo build --release
 
 # Install to /usr/local/bin (Linux/macOS)
-sudo cp target/release/authful-mcp-proxy-ng /usr/local/bin/
+sudo cp target/release/authful-mcp-proxy-rs /usr/local/bin/
 
 # Or on Windows, copy to a directory in your PATH
-# copy target\release\authful-mcp-proxy-ng.exe C:\Windows\System32\
+# copy target\release\authful-mcp-proxy-rs.exe C:\Windows\System32\
 ```
 
 ## Usage
@@ -110,7 +130,7 @@ The simplest way to use with MCP clients like Claude Desktop:
 {
   "mcpServers": {
     "my-protected-server": {
-      "command": "/usr/local/bin/authful-mcp-proxy-ng",
+      "command": "/usr/local/bin/authful-mcp-proxy-rs",
       "args": ["https://mcp-backend.company.com/mcp"],
       "env": {
         "OIDC_ISSUER_URL": "https://auth.company.com",
@@ -126,7 +146,7 @@ The simplest way to use with MCP clients like Claude Desktop:
 {
   "mcpServers": {
     "my-protected-server": {
-      "command": "C:\\Program Files\\authful-mcp-proxy-ng\\authful-mcp-proxy-ng.exe",
+      "command": "C:\\Program Files\\authful-mcp-proxy-rs\\authful-mcp-proxy-rs.exe",
       "args": ["https://mcp-backend.company.com/mcp"],
       "env": {
         "OIDC_ISSUER_URL": "https://auth.company.com",
@@ -149,29 +169,29 @@ All options can be set via environment variables in the `env` block or passed as
 
 **Required Configuration:**
 
-| Environment Variable | CLI Flag | Description | Example |
-|---------------------|----------|-------------|---------|
-| `MCP_BACKEND_URL` | `<MCP_BACKEND_URL>` | Remote MCP server URL (positional argument) | `https://mcp.example.com/mcp` |
-| `OIDC_ISSUER_URL` | `--oidc-issuer-url` | Your OIDC provider's issuer URL | `https://auth.example.com` |
-| `OIDC_CLIENT_ID` | `--oidc-client-id` | OAuth client ID from your OIDC provider | `my-app-client-id` |
+| Environment Variable | CLI Flag            | Description                                 | Example                       |
+| -------------------- | ------------------- | ------------------------------------------- | ----------------------------- |
+| `MCP_BACKEND_URL`    | `<MCP_BACKEND_URL>` | Remote MCP server URL (positional argument) | `https://mcp.example.com/mcp` |
+| `OIDC_ISSUER_URL`    | `--oidc-issuer-url` | Your OIDC provider's issuer URL             | `https://auth.example.com`    |
+| `OIDC_CLIENT_ID`     | `--oidc-client-id`  | OAuth client ID from your OIDC provider     | `my-app-client-id`            |
 
 **Optional Configuration:**
 
-| Environment Variable | CLI Flag | Default | Description |
-|---------------------|----------|---------|-------------|
-| `OIDC_CLIENT_SECRET` | `--oidc-client-secret` | _(none)_ | Client secret (not needed for public clients) |
-| `OIDC_SCOPES` | `--oidc-scopes` | `openid profile email` | Space-separated OAuth scopes |
-| `OIDC_REDIRECT_URL` | `--oidc-redirect-url` | `http://localhost:8080/auth/callback` | OAuth callback URL |
+| Environment Variable | CLI Flag               | Default                               | Description                                   |
+| -------------------- | ---------------------- | ------------------------------------- | --------------------------------------------- |
+| `OIDC_CLIENT_SECRET` | `--oidc-client-secret` | _(none)_                              | Client secret (not needed for public clients) |
+| `OIDC_SCOPES`        | `--oidc-scopes`        | `openid profile email`                | Space-separated OAuth scopes                  |
+| `OIDC_REDIRECT_URL`  | `--oidc-redirect-url`  | `http://localhost:8080/auth/callback` | OAuth callback URL                            |
 
 **Advanced Options:**
 
-| CLI Flag | Description |
-|----------|-------------|
-| `--no-banner` | Suppress the startup banner |
-| `--silent` | Show only error messages |
-| `--debug` | Enable detailed debug logging |
+| CLI Flag      | Description                   |
+| ------------- | ----------------------------- |
+| `--no-banner` | Suppress the startup banner   |
+| `--silent`    | Show only error messages      |
+| `--debug`     | Enable detailed debug logging |
 
-Run `authful-mcp-proxy-ng --help` for complete CLI documentation.
+Run `authful-mcp-proxy-rs --help` for complete CLI documentation.
 
 ### Usage Examples
 
@@ -183,7 +203,7 @@ Add to your Claude Desktop config (accessible via Settings → Developer → Edi
 {
   "mcpServers": {
     "company-tools": {
-      "command": "/usr/local/bin/authful-mcp-proxy-ng",
+      "command": "/usr/local/bin/authful-mcp-proxy-rs",
       "args": ["https://mcp-backend.company.com/mcp"],
       "env": {
         "OIDC_ISSUER_URL": "https://auth.company.com",
@@ -207,7 +227,7 @@ For OIDC confidential clients requiring a secret:
 {
   "mcpServers": {
     "secure-server": {
-      "command": "/usr/local/bin/authful-mcp-proxy-ng",
+      "command": "/usr/local/bin/authful-mcp-proxy-rs",
       "args": ["https://api.example.com/mcp"],
       "env": {
         "OIDC_ISSUER_URL": "https://login.example.com",
@@ -228,7 +248,7 @@ If port 8080 is already in use, specify a different port:
 {
   "mcpServers": {
     "my-server": {
-      "command": "/usr/local/bin/authful-mcp-proxy-ng",
+      "command": "/usr/local/bin/authful-mcp-proxy-rs",
       "args": ["https://mcp.example.com"],
       "env": {
         "OIDC_ISSUER_URL": "https://auth.example.com",
@@ -250,7 +270,7 @@ Enable detailed logging for troubleshooting:
 {
   "mcpServers": {
     "debug-server": {
-      "command": "/usr/local/bin/authful-mcp-proxy-ng",
+      "command": "/usr/local/bin/authful-mcp-proxy-rs",
       "args": [
         "--debug",
         "https://mcp.example.com"
@@ -274,7 +294,7 @@ Create an `mcp.json` file:
 {
   "mcpServers": {
     "authful-mcp-proxy": {
-      "command": "/usr/local/bin/authful-mcp-proxy-ng",
+      "command": "/usr/local/bin/authful-mcp-proxy-rs",
       "args": ["https://mcp.example.com/mcp"],
       "env": {
         "OIDC_ISSUER_URL": "https://auth.example.com",
@@ -298,7 +318,7 @@ These editors use the same configuration format as Claude Desktop. Add the serve
 
 ```bash
 # Run directly
-authful-mcp-proxy-ng \
+authful-mcp-proxy-rs \
   --oidc-issuer-url https://auth.example.com \
   --oidc-client-id my-client \
   https://mcp.example.com/mcp
@@ -306,7 +326,7 @@ authful-mcp-proxy-ng \
 # Or use environment variables
 export OIDC_ISSUER_URL=https://auth.example.com
 export OIDC_CLIENT_ID=my-client
-authful-mcp-proxy-ng https://mcp.example.com/mcp
+authful-mcp-proxy-rs https://mcp.example.com/mcp
 ```
 
 ## Credential Management
@@ -404,7 +424,7 @@ The next time you connect, you'll be prompted to authenticate again.
 Enable debug mode to see detailed information about the authentication flow:
 
 ```bash
-authful-mcp-proxy-ng --debug https://mcp.example.com/mcp
+authful-mcp-proxy-rs --debug https://mcp.example.com/mcp
 ```
 
 Or via environment variable:
@@ -450,8 +470,8 @@ Contributions are welcome! This is a Rust rewrite with feature parity to the ori
 **Development:**
 ```bash
 # Clone and build
-git clone https://github.com/yourusername/authful-mcp-proxy-ng.git
-cd authful-mcp-proxy-ng
+git clone https://github.com/yourusername/authful-mcp-proxy-rs.git
+cd authful-mcp-proxy-rs
 cargo build
 
 # Run tests

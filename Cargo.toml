@@ -1,16 +1,16 @@
 [package]
-name = "authful-mcp-proxy-ng"
+name = "authful-mcp-proxy-rs"
 version = "0.1.0"
 edition = "2021"
 authors = ["Authful MCP Proxy Contributors"]
 description = "MCP proxy with OIDC authentication for Claude Desktop"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/yourusername/authful-mcp-proxy-ng"
+repository = "https://github.com/SaSteffen/authful-mcp-proxy-rs"
 keywords = ["mcp", "oauth", "oidc", "proxy"]
 categories = ["command-line-utilities", "authentication"]
 
 [[bin]]
-name = "authful-mcp-proxy-ng"
+name = "authful-mcp-proxy-rs"
 path = "src/main.rs"
 
 [dependencies]
@@ -44,6 +44,9 @@ anyhow = "1"
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Time handling
+chrono = "0.4"
 
 # Cross-platform browser launching
 webbrowser = "1"

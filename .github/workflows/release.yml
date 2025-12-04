@@ -84,31 +84,31 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.tar.gz authful-mcp-proxy-ng
+          tar czf ../../../authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.tar.gz authful-mcp-proxy-rs
           cd -
 
       - name: Create archive (Windows)
         if: runner.os == 'Windows'
         run: |
           cd target\${{ matrix.target }}\release
-          7z a ..\..\..\authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.zip authful-mcp-proxy-ng.exe
+          7z a ..\..\..\authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.zip authful-mcp-proxy-rs.exe
           cd ..\..\..
 
       - name: Generate checksums (Unix)
         if: runner.os != 'Windows'
         run: |
-          sha256sum authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.tar.gz > authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.tar.gz.sha256
+          sha256sum authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.tar.gz > authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.tar.gz.sha256
 
       - name: Generate checksums (Windows)
         if: runner.os == 'Windows'
         run: |
-          certutil -hashfile authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.zip SHA256 > authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.zip.sha256
+          certutil -hashfile authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.zip SHA256 > authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.zip.sha256
 
       - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.*
+            authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-${{ matrix.name }}.*
           body: |
             ## Authful MCP Proxy (Rust) ${{ steps.get_version.outputs.version }}
 
@@ -116,11 +116,11 @@ jobs:
 
             Choose the binary for your platform:
 
-            - **Linux x64**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-linux-x64.tar.gz`
-            - **Linux ARM64**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-linux-arm64.tar.gz`
-            - **macOS Intel**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-macos-intel.tar.gz`
-            - **macOS Apple Silicon**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-macos-arm.tar.gz`
-            - **Windows x64**: `authful-mcp-proxy-ng-v${{ steps.get_version.outputs.version }}-windows-x64.zip`
+            - **Linux x64**: `authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-linux-x64.tar.gz`
+            - **Linux ARM64**: `authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-linux-arm64.tar.gz`
+            - **macOS Intel**: `authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-macos-intel.tar.gz`
+            - **macOS Apple Silicon**: `authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-macos-arm.tar.gz`
+            - **Windows x64**: `authful-mcp-proxy-rs-v${{ steps.get_version.outputs.version }}-windows-x64.zip`
 
             ### Installation
 
