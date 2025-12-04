@@ -498,4 +498,4 @@ This project aims for first-class support on Linux, macOS, and Windows. Please t
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
 
-This is a Rust rewrite of the original [Python authful-mcp-proxy](https://github.com/yourusername/authful-mcp-proxy).
+This is a Rust rewrite of the original [Python authful-mcp-proxy](https://github.com/stephaneberle9/authful-mcp-proxy).
