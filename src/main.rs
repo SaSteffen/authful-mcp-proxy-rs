@@ -21,15 +21,64 @@ const BANNER: &str = r#"
 ╚══════════════════════════════════════════════════════════════╝
 "#;
 
-fn setup_logging(config: &Config) {
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new(format!("{}", config.log_level())));
+fn setup_logging(config: &Config) -> Option<String> {
+    if config.logs_disabled() {
+        // Initialize a subscriber that discards all logs (prevents library output)
+        tracing_subscriber::registry()
+            .with(EnvFilter::new("off"))
+            .with(fmt::layer().with_writer(std::io::sink))
+            .init();
+        return None;
+    }
 
-    // Ensure logs go to stderr, not stdout (stdout is for JSON-RPC only)
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(fmt::layer().with_writer(std::io::stderr))
-        .init();
+    // Build filter that explicitly controls all crates
+    // This ensures library logs go through our tracing system, never directly to stdout
+    // Can be overridden with RUST_LOG environment variable
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        let level = config.log_level();
+        EnvFilter::new(format!(
+            "authful_mcp_proxy_ng={},\
+             reqwest={},\
+             reqwest_middleware={},\
+             hyper={},\
+             tower={},\
+             axum={},\
+             h2=warn,\
+             rustls=warn,\
+             tokio=warn",
+            level, level, level, level, level, level
+        ))
+    });
+
+    if config.log_to_file {
+        // Log to file with auto-generated filename
+        let log_file_path = Config::generate_log_file_path();
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_file_path)
+            .expect("Failed to create log file");
+
+        tracing_subscriber::registry()
+            .with(filter)
+            .with(
+                fmt::layer()
+                    .with_writer(std::sync::Arc::new(file))
+                    .with_ansi(false), // Disable colors in file
+            )
+            .init();
+
+        Some(log_file_path)
+    } else {
+        // Log to stderr (stdout is for JSON-RPC only)
+        // IMPORTANT: All logs MUST go to stderr to avoid polluting stdout
+        tracing_subscriber::registry()
+            .with(filter)
+            .with(fmt::layer().with_writer(std::io::stderr))
+            .init();
+
+        None
+    }
 }
 
 #[tokio::main]
@@ -37,28 +86,46 @@ async fn main() {
     let config = Config::parse_args();
 
     // Set up logging
-    setup_logging(&config);
+    let log_file_path = setup_logging(&config);
 
     // Validate configuration
     if let Err(e) = config.validate() {
-        error!("Configuration error: {}", e);
+        // Write error to stderr explicitly, even if logging is disabled
+        use std::io::Write;
+        let mut stderr = std::io::stderr();
+        let _ = writeln!(stderr, "Configuration error: {}", e);
+        let _ = stderr.flush();
         std::process::exit(1);
     }
 
-    // Show banner unless suppressed (write to stderr, not stdout!)
-    if !config.no_banner && !config.silent {
-        eprintln!("{}", BANNER);
+    // Show banner and info unless silent
+    // CRITICAL: Banner and empty line MUST go to stderr, never stdout
+    if !config.silent {
+        use std::io::Write;
+        let mut stderr = std::io::stderr();
+        let _ = writeln!(stderr, "{}", BANNER);
+        let _ = stderr.flush();
+
+        if let Some(ref log_path) = log_file_path {
+            info!("Logging to file: {}", log_path);
+        }
         info!("Backend URL: {}", config.backend_url);
         info!("OIDC Issuer: {}", config.oidc_issuer_url);
         info!("Client ID: {}", config.oidc_client_id);
         info!("Scopes: {}", config.scopes().join(" "));
         info!("Redirect URL: {}", config.redirect_url());
-        eprintln!();
+
+        let _ = writeln!(stderr);
+        let _ = stderr.flush();
     }
 
     // Run the proxy
     if let Err(e) = run_proxy(config).await {
-        error!("Proxy error: {}", e);
+        // Write error to stderr explicitly
+        use std::io::Write;
+        let mut stderr = std::io::stderr();
+        let _ = writeln!(stderr, "Proxy error: {}", e);
+        let _ = stderr.flush();
         std::process::exit(1);
     }
 }

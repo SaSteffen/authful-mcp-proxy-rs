@@ -38,17 +38,17 @@ pub struct Config {
     #[arg(long, env = "OIDC_REDIRECT_URL")]
     pub oidc_redirect_url: Option<String>,
 
-    /// Don't show the proxy server banner
-    #[arg(long)]
-    pub no_banner: bool,
-
-    /// Show only error messages
+    /// Disable all logging (no stderr output)
     #[arg(long, conflicts_with = "debug")]
     pub silent: bool,
 
     /// Enable debug logging
     #[arg(long, env = "MCP_PROXY_DEBUG")]
     pub debug: bool,
+
+    /// Write logs to a file instead of stderr (auto-generated filename in current directory)
+    #[arg(long)]
+    pub log_to_file: bool,
 
     /// Dump all messages to a log file for debugging (format: YYYY-MM-DD_HH-MM-SS_messages.log)
     #[arg(long, env = "MCP_PROXY_DUMP_MESSAGES")]
@@ -117,13 +117,30 @@ impl Config {
 
     /// Get log level based on flags
     pub fn log_level(&self) -> tracing::Level {
-        if self.silent {
-            tracing::Level::ERROR
-        } else if self.debug {
+        if self.debug {
             tracing::Level::DEBUG
         } else {
             tracing::Level::INFO
         }
+    }
+
+    /// Check if logging should be disabled entirely
+    pub fn logs_disabled(&self) -> bool {
+        self.silent
+    }
+
+    /// Generate log file path with timestamp
+    pub fn generate_log_file_path() -> String {
+        use std::time::SystemTime;
+
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap();
+        let timestamp = chrono::DateTime::from_timestamp(now.as_secs() as i64, 0)
+            .unwrap()
+            .format("%Y-%m-%d_%H-%M-%S");
+
+        format!("{}_authful-mcp-proxy.log", timestamp)
     }
 }
 
@@ -140,9 +157,9 @@ mod tests {
             oidc_client_secret: None,
             oidc_scopes: None,
             oidc_redirect_url: None,
-            no_banner: false,
             silent: false,
             debug: false,
+            log_to_file: false,
             dump_messages: None,
         };
 
@@ -161,9 +178,9 @@ mod tests {
             oidc_client_secret: None,
             oidc_scopes: Some("profile email".to_string()),
             oidc_redirect_url: None,
-            no_banner: false,
             silent: false,
             debug: false,
+            log_to_file: false,
             dump_messages: None,
         };
 
@@ -182,9 +199,9 @@ mod tests {
             oidc_client_secret: None,
             oidc_scopes: None,
             oidc_redirect_url: None,
-            no_banner: false,
             silent: false,
             debug: false,
+            log_to_file: false,
             dump_messages: None,
         };
 
